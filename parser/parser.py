@@ -68,8 +68,6 @@ class CSMarketParser:
             'url': url,
             'title': self._extract_title(),
             'price': self._extract_best_offer_price(),
-            'avg_price': self._extract_price_info('Average price:'),
-            'sales_count': self._extract_sales_count(),
         }
         
         return result

@@ -4,7 +4,7 @@
 """
 from functools import wraps
 import telebot
-from telebot.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
+from telebot.types import Message
 
 # Импортируем бизнес-логику
 from db.connector import CSMarketDatabase
@@ -12,7 +12,7 @@ from db.models import Item
 from parser.parser import CSMarketParser
 
 # Импортируем клавиатуру, константы и общую конфигурацию
-from item_tracker_bot.keyboards import main_menu_keyboard, cancel_keyboard, numeric_keyboard
+from item_tracker_bot.keyboards import main_menu_keyboard, cancel_keyboard, numeric_keyboard, confirm_delete_keyboard
 from item_tracker_bot.constants import MainMenuCommands, ActionCommands
 from config import config
 
@@ -176,60 +176,84 @@ def process_new_price_step(message: Message, bot: telebot.TeleBot, item_id: int)
         )
 
 
-# --- Логика удаления предмета ---
+# --- Логика удаления предмета (новая версия) ---
 
 @access_checker
 def delete_item_start(message: Message, bot: telebot.TeleBot):
     """
     Начало сценария удаления предмета.
-    Показывает список предметов с кнопками для удаления.
+    Показывает нумерованный список предметов и клавиатуру с цифрами.
     """
     items = db.get_all_items()
-
     if not items:
         bot.send_message(message.chat.id, "У вас пока нет отслеживаемых предметов.")
         return
 
-    markup = InlineKeyboardMarkup()
-    for item in items:
-        # Обрезаем название, если оно слишком длинное
-        title = (item['title'][:20] + '..') if len(item['title']) > 22 else item['title']
-        button_text = f"❌ {title}"
-        callback_data = f"delete_{item['id']}"
-        markup.add(InlineKeyboardButton(text=button_text, callback_data=callback_data))
+    report_parts = ["*Какой предмет вы хотите удалить?*\nОтправьте его номер (для первых 10 можно использовать клавиатуру).\n"]
+    for i, item in enumerate(items, 1):
+        report_parts.append(f"*{i}*. {item['title']}")
 
-    bot.send_message(message.chat.id, "Какой предмет вы хотите удалить?", reply_markup=markup)
+    report = "\n".join(report_parts)
+    bot.send_message(
+        message.chat.id,
+        report,
+        reply_markup=numeric_keyboard(len(items)),
+        parse_mode="Markdown"
+    )
+    bot.register_next_step_handler(message, process_item_choice_for_delete, bot, items)
 
 
-def handle_delete_callback(call: telebot.types.CallbackQuery, bot: telebot.TeleBot):
-    """
-    Обрабатывает нажатие на кнопку 'Удалить'.
-    """
-    if not call.data:
+def process_item_choice_for_delete(message: Message, bot: telebot.TeleBot, items: list):
+    """Обрабатывает выбор номера предмета для удаления."""
+    if message.text == ActionCommands.CANCEL:
+        return cancel_handler(message, bot)
+
+    if not message.text or not message.text.isdigit():
+        bot.send_message(message.chat.id, "Пожалуйста, введите номер предмета из списка.", reply_markup=numeric_keyboard(len(items)))
+        bot.register_next_step_handler(message, process_item_choice_for_delete, bot, items)
         return
 
-    item_id = int(call.data.split('_')[1])
-    
-    # Получаем информацию о предмете для сообщения
-    item = db.get_item_by_id(item_id)
-    item_title = item['title'] if item else "неизвестный предмет"
+    choice = int(message.text)
+    if not (1 <= choice <= len(items)):
+        bot.send_message(message.chat.id, f"Неверный номер. Введите число от 1 до {len(items)}.", reply_markup=numeric_keyboard(len(items)))
+        bot.register_next_step_handler(message, process_item_choice_for_delete, bot, items)
+        return
+
+    selected_item = items[choice - 1]
+    item_id = selected_item['id']
+    item_title = selected_item['title']
+
+    # Запрашиваем подтверждение
+    bot.send_message(
+        message.chat.id,
+        f"Вы уверены, что хотите удалить '{item_title}'?",
+        reply_markup=confirm_delete_keyboard()
+    )
+    bot.register_next_step_handler(message, confirm_delete_step, bot, item_id, item_title)
+
+
+def confirm_delete_step(message: Message, bot: telebot.TeleBot, item_id: int, item_title: str):
+    """Подтверждение удаления."""
+    if message.text == ActionCommands.CANCEL:
+        return cancel_handler(message, bot)
+
+    if message.text != ActionCommands.CONFIRM_DELETE:
+        # Если что-то другое, повторяем запрос
+        bot.send_message(message.chat.id, "Нажмите '✅ Да' для удаления или '❌ Отмена' для отмены.", reply_markup=confirm_delete_keyboard())
+        bot.register_next_step_handler(message, confirm_delete_step, bot, item_id, item_title)
+        return
 
     if db.remove_item(item_id):
-        bot.answer_callback_query(call.id, f"Предмет '{item_title}' удален.")
-        # Обновляем сообщение, убирая клавиатуру
-        bot.edit_message_text(
-            chat_id=call.message.chat.id,
-            message_id=call.message.message_id,
-            text=f"Предмет '{item_title}' был успешно удален.",
-            reply_markup=None
+        bot.send_message(
+            message.chat.id,
+            f"✅ Предмет '{item_title}' был успешно удалён.",
+            reply_markup=main_menu_keyboard()
         )
     else:
-        bot.answer_callback_query(call.id, "Не удалось удалить предмет.", show_alert=True)
-        bot.edit_message_text(
-            chat_id=call.message.chat.id,
-            message_id=call.message.message_id,
-            text="Произошла ошибка при удалении.",
-            reply_markup=None
+        bot.send_message(
+            message.chat.id,
+            "❌ Не удалось удалить предмет.",
+            reply_markup=main_menu_keyboard()
         )
 
 

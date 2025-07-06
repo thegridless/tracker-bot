@@ -29,8 +29,6 @@ class CSMarketDatabase:
                     url TEXT UNIQUE NOT NULL,
                     title TEXT NOT NULL,
                     current_price REAL,
-                    avg_price REAL,
-                    sales_count INTEGER,
                     purchase_price REAL DEFAULT 0,
                     profit_percent REAL DEFAULT 0,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -64,19 +62,16 @@ class CSMarketDatabase:
                 
                 # Конвертируем цены в числа
                 current_price = self._parse_price(item_data.get('price'))
-                avg_price = self._parse_price(item_data.get('avg_price'))
                 
                 cursor.execute('''
                     INSERT OR IGNORE INTO items 
-                    (url, title, current_price, avg_price, sales_count, purchase_price, profit_percent)
-                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                    (url, title, current_price, purchase_price, profit_percent)
+                    VALUES (?, ?, ?, ?, ?)
                 ''', (
                     item_data['url'],
                     item_data['title'],
                     current_price,
-                    avg_price,
-                    item_data.get('sales_count', 0),
-                    0,  # purchase_price по умолчанию 0
+                    item_data.get('purchase_price', 0),
                     0   # profit_percent по умолчанию 0
                 ))
                 
@@ -110,13 +105,12 @@ class CSMarketDatabase:
                 
                 # Конвертируем цены в числа
                 current_price = self._parse_price(item_data.get('price'))
-                avg_price = self._parse_price(item_data.get('avg_price'))
                 
                 # Обновляем данные предмета и сразу пересчитываем прибыль
                 cursor.execute('''
                     UPDATE items 
-                    SET title = ?, current_price = ?, avg_price = ?, 
-                        sales_count = ?, updated_at = CURRENT_TIMESTAMP,
+                    SET title = ?, current_price = ?, 
+                        updated_at = CURRENT_TIMESTAMP,
                         profit_percent = CASE 
                             WHEN purchase_price > 0 THEN 
                                 ((? - purchase_price) / purchase_price) * 100
@@ -126,8 +120,6 @@ class CSMarketDatabase:
                 ''', (
                     item_data['title'],
                     current_price,
-                    avg_price,
-                    item_data.get('sales_count', 0),
                     current_price,  # Для расчета прибыли
                     item_data['url']
                 ))
@@ -266,8 +258,7 @@ class CSMarketDatabase:
             with sqlite3.connect(self.db_path) as conn:
                 cursor = conn.cursor()
                 cursor.execute('''
-                    SELECT id, url, title, current_price, avg_price, sales_count, 
-                           purchase_price, profit_percent, created_at, updated_at
+                    SELECT id, url, title, current_price, purchase_price, profit_percent, created_at, updated_at
                     FROM items
                     ORDER BY updated_at DESC
                 ''')
@@ -299,8 +290,7 @@ class CSMarketDatabase:
             with sqlite3.connect(self.db_path) as conn:
                 cursor = conn.cursor()
                 cursor.execute('''
-                    SELECT id, url, title, current_price, avg_price, sales_count, 
-                           purchase_price, profit_percent, created_at, updated_at
+                    SELECT id, url, title, current_price, purchase_price, profit_percent, created_at, updated_at
                     FROM items
                     WHERE url = ?
                 ''', (url,))
@@ -343,8 +333,7 @@ class CSMarketDatabase:
             with sqlite3.connect(self.db_path) as conn:
                 cursor = conn.cursor()
                 cursor.execute('''
-                    SELECT id, url, title, current_price, avg_price, sales_count, 
-                           purchase_price, profit_percent, created_at, updated_at
+                    SELECT id, url, title, current_price, purchase_price, profit_percent, created_at, updated_at
                     FROM items
                     WHERE id = ?
                 ''', (item_id,))
@@ -452,17 +441,15 @@ class CSMarketDatabase:
         print("="*120)
         
         # Заголовки таблицы
-        print(f"{'ID':<3} {'Название':<30} {'Текущая цена':<12} {'Сред. цена':<12} {'Цена закупки':<12} {'Прибыль %':<10} {'Продажи':<8}")
+        print(f"{'ID':<3} {'Название':<30} {'Текущая цена':<12} {'Цена закупки':<12} {'Прибыль %':<10}")
         print("-"*120)
         
         for item in items:
             title = item['title'][:27] + '...' if len(item['title']) > 30 else item['title']
             current_price = f"${item['current_price']:.2f}" if item['current_price'] else "N/A"
-            avg_price = f"${item['avg_price']:.2f}" if item['avg_price'] else "N/A"
             purchase_price = f"${item['purchase_price']:.2f}" if item['purchase_price'] else "N/A"
             profit = f"{item['profit_percent']:.1f}%" if item['profit_percent'] else "0.0%"
-            sales = item['sales_count'] if item['sales_count'] else 0
             
-            print(f"{item['id']:<3} {title:<30} {current_price:<12} {avg_price:<12} {purchase_price:<12} {profit:<10} {sales:<8}")
+            print(f"{item['id']:<3} {title:<30} {current_price:<12} {purchase_price:<12} {profit:<10}")
         
         print("="*120) 

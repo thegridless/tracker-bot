@@ -61,3 +61,14 @@ def numeric_keyboard(count: int) -> ReplyKeyboardMarkup:
     # Добавляем кнопку отмены в самый низ
     markup.add(KeyboardButton(ActionCommands.CANCEL))
     return markup
+
+
+def confirm_delete_keyboard() -> ReplyKeyboardMarkup:
+    """
+    Создает клавиатуру с кнопками подтверждения удаления.
+    """
+    markup = ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=False)
+    yes_btn = KeyboardButton(ActionCommands.CONFIRM_DELETE)
+    cancel_btn = KeyboardButton(ActionCommands.CANCEL)
+    markup.add(yes_btn, cancel_btn)
+    return markup

@@ -15,4 +15,5 @@ class MainMenuCommands(str, Enum):
 
 class ActionCommands(str, Enum):
     """Команды для действий в процессе диалога."""
-    CANCEL = "❌ Отмена" 
+    CANCEL = "❌ Отмена"
+    CONFIRM_DELETE = "✅ Да" 
