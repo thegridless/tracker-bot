@@ -12,7 +12,7 @@ from parser.parser import CSMarketParser
 from config import config
 
 # Инициализируем коннектор к базе данных
-db = CSMarketDatabase(db_path='db/cs_market.db')
+db = CSMarketDatabase(db_path=config.DATABASE_PATH)
 
 def _generate_report() -> str:
     """

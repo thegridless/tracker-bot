@@ -1,5 +1,6 @@
 import os
 from typing import Optional
+from pathlib import Path
 
 
 class BotConfig:
@@ -12,8 +13,9 @@ class BotConfig:
         # ID администратора (для рассылки уведомлений)
         self.ADMIN_ID: Optional[int] = int(os.getenv('ADMIN_ID', '0'))  # Заглушка
         
-        # Настройки базы данных
-        self.DATABASE_PATH: str = 'db/cs_market.db'
+        # Абсолютный путь к базе данных (гарантирует корректную работу вне зависимости от текущей директории)
+        project_root = Path(__file__).resolve().parent
+        self.DATABASE_PATH: str = str(project_root / 'db' / 'cs_market.db')
         
         # Настройки парсера
         self.PARSER_WAIT_TIME: int = 5  # Время ожидания загрузки страницы
