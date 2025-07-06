@@ -27,17 +27,23 @@ class Item:
     
     def calculate_profit(self) -> tuple[float, float]:
         """
-        Рассчитывает прибыль в абсолютных числах и процентах
+        Рассчитывает прибыль в абсолютных числах и процентах.
+        Если цена закупки не задана (<=0) или текущая цена отсутствует,
+        возвращает (0.0, 0.0) без выброса исключений.
         
         Returns:
             tuple[float, float]: (абсолютная_прибыль, процент_прибыли)
         """
-        if self.purchase_price <= 0:
+        # Без корректной цены закупки посчитать доход невозможно
+        if not self.purchase_price or self.purchase_price <= 0:
             return 0.0, 0.0
-        
-        absolute_profit = self.current_price - self.purchase_price
+
+        # Если текущая цена None, считаем её равной 0 для корректного вычитания
+        current_price = self.current_price or 0.0
+
+        absolute_profit = current_price - self.purchase_price
         percent_profit = (absolute_profit / self.purchase_price) * 100
-        
+
         return absolute_profit, percent_profit
     
     def to_dict(self) -> dict:
