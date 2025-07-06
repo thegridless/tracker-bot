@@ -57,6 +57,8 @@ class CSMarketDatabase:
             True если добавление успешно, False если предмет уже существует
         """
         try:
+            # --- НОВОЕ: нормализуем URL ---
+            item_data['url'] = self._sanitize_url(item_data.get('url', ''))
             with sqlite3.connect(self.db_path) as conn:
                 cursor = conn.cursor()
                 
@@ -101,6 +103,8 @@ class CSMarketDatabase:
             True если обновление успешно
         """
         try:
+            # --- НОВОЕ: нормализуем URL ---
+            item_data['url'] = self._sanitize_url(item_data.get('url', ''))
             with sqlite3.connect(self.db_path) as conn:
                 cursor = conn.cursor()
                 
@@ -177,6 +181,7 @@ class CSMarketDatabase:
             True если операция успешна
         """
         try:
+            url = self._sanitize_url(url)  # Нормализуем URL перед запросом
             with sqlite3.connect(self.db_path) as conn:
                 cursor = conn.cursor()
                 
@@ -426,7 +431,13 @@ class CSMarketDatabase:
         except (ValueError, AttributeError):
             return None
     
-
+    def _sanitize_url(self, url: str) -> str:
+        """Возвращает URL, гарантируя англоязычную версию страницы.
+        Если встречается сегмент "/ru/", он заменяется на "/en/".
+        """
+        if not url:
+            return url
+        return url.replace('/ru/', '/en/')
     
     def print_items_table(self):
         """Выводит таблицу всех предметов"""
