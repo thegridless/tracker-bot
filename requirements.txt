@@ -1,5 +1,6 @@
 # CS Market Tracker Bot - Зависимости
 
+dotenv
 # Telegram Bot API
 pyTelegramBotAPI==4.27.0
 

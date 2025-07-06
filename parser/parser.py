@@ -1,4 +1,4 @@
-from DrissionPage import ChromiumPage
+from DrissionPage import ChromiumPage, ChromiumOptions
 import time
 import re
 from typing import Optional, Dict, Any
@@ -21,7 +21,9 @@ class CSMarketParser:
     
     def __enter__(self):
         """Контекстный менеджер - вход"""
-        self.page = ChromiumPage()
+        # Создаем опции для запуска в headless-режиме, необходимом для сервера
+        co = ChromiumOptions().set_headless()
+        self.page = ChromiumPage(co)
         return self
     
     def __exit__(self, exc_type, exc_val, exc_tb):
