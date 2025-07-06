@@ -1,0 +1,11 @@
+# CS Market Tracker Bot - Зависимости
+
+# Telegram Bot API
+pyTelegramBotAPI==4.27.0
+
+# Парсинг веб-страниц
+DrissionPage==4.1.0.18
+beautifulsoup4==4.12.3
+
+# Работа с HTTP (зависимость DrissionPage)
+requests>=2.32.0 
