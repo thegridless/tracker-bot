@@ -22,8 +22,9 @@ class CSMarketParser:
     def __enter__(self):
         """Контекстный менеджер - вход"""
         # Создаем опции для запуска в headless-режиме, необходимом для сервера
-        co = ChromiumOptions().set_headless()
-        self.page = ChromiumPage(co)
+        co = ChromiumOptions()
+        co.set_argument('--headless', 'true')
+        self.page = ChromiumPage(addr_or_opts=co)
         return self
     
     def __exit__(self, exc_type, exc_val, exc_tb):
