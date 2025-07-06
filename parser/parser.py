@@ -23,7 +23,9 @@ class CSMarketParser:
         """Контекстный менеджер - вход"""
         # Создаем опции для запуска в headless-режиме, необходимом для сервера
         co = ChromiumOptions()
-        co.set_argument('--headless', 'true')
+        co.set_argument('--headless', 'new')
+        co.set_argument('--no-sandbox')
+        co.set_argument('--disable-dev-shm-usage')
         # Указываем путь к исполняемому файлу браузера на сервере
         co.set_browser_path(path='/usr/bin/chromium-browser')
         self.page = ChromiumPage(addr_or_opts=co)
