@@ -24,6 +24,8 @@ class CSMarketParser:
         # Создаем опции для запуска в headless-режиме, необходимом для сервера
         co = ChromiumOptions()
         co.set_argument('--headless', 'true')
+        co.set_argument('--no-sandbox')
+        co.set_argument('--disable-dev-shm-usage')
         self.page = ChromiumPage(addr_or_opts=co)
         return self
     
