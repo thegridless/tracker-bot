@@ -11,7 +11,7 @@ class BotConfig:
         self.BOT_TOKEN: Optional[str] = os.getenv('BOT_TOKEN', 'YOUR_BOT_TOKEN_HERE')
         
         # ID администратора (для рассылки уведомлений)
-        self.ADMIN_ID: Optional[int] = int(os.getenv('ADMIN_ID', '0'))  # Заглушка
+        self.ADMIN_ID: Optional[int] = int(os.getenv('ADMIN_ID', '535511089'))  # Заглушка
         
         # Абсолютный путь к базе данных (гарантирует корректную работу вне зависимости от текущей директории)
         project_root = Path(__file__).resolve().parent

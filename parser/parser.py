@@ -1,6 +1,10 @@
 from DrissionPage import ChromiumPage, ChromiumOptions
 import time
 import re
+import subprocess
+import shutil
+import os
+import tempfile
 from typing import Optional, Dict, Any
 from bs4 import BeautifulSoup
 
@@ -19,15 +23,71 @@ class CSMarketParser:
         self.page = None
         self.soup = None
     
+    @staticmethod
+    def _find_browser_path() -> Optional[str]:
+        """
+        Находит путь к установленному браузеру Chromium/Chrome
+        
+        Returns:
+            Путь к исполняемому файлу браузера или None, если не найден
+        """
+        # Список возможных путей и команд для поиска браузера
+        possible_paths = [
+            '/usr/bin/chromium-browser',
+            '/usr/bin/chromium',
+            '/usr/bin/google-chrome',
+            '/snap/bin/chromium',
+        ]
+        
+        # Проверяем стандартные пути
+        for path in possible_paths:
+            if shutil.which(path.split('/')[-1]) or os.path.exists(path):
+                # Проверяем, что это действительно исполняемый файл браузера
+                try:
+                    result = subprocess.run(
+                        [path, '--version'],
+                        capture_output=True,
+                        timeout=5,
+                        text=True
+                    )
+                    if result.returncode == 0 or 'Chromium' in result.stdout or 'Chrome' in result.stdout:
+                        return path
+                except (subprocess.TimeoutExpired, FileNotFoundError, PermissionError):
+                    continue
+        
+        # Пробуем найти через which
+        for cmd in ['chromium-browser', 'chromium', 'google-chrome']:
+            path = shutil.which(cmd)
+            if path:
+                return path
+        
+        return None
+    
     def __enter__(self):
         """Контекстный менеджер - вход"""
         # Создаем опции для запуска в headless-режиме, необходимом для сервера
         co = ChromiumOptions()
-        co.set_argument('--headless', 'new')
+        # Устанавливаем headless режим (новый формат для Chrome/Chromium)
+        co.set_argument('--headless=new')
+        # Параметры для Linux систем без GUI (решают проблему подключения к браузеру)
         co.set_argument('--no-sandbox')
         co.set_argument('--disable-dev-shm-usage')
-        # Указываем путь к исполняемому файлу браузера на сервере
-        co.set_browser_path(path='/usr/bin/chromium-browser')
+        co.set_argument('--disable-gpu')
+        co.set_argument('--disable-software-rasterizer')
+        # Автоматически находим путь к браузеру
+        browser_path = self._find_browser_path()
+        if browser_path:
+            co.set_browser_path(path=browser_path)
+            print(f"Используется браузер: {browser_path}")
+        else:
+            print("⚠️  Браузер не найден автоматически. Установите Chromium: sudo snap install chromium")
+            # Пробуем без указания пути - DrissionPage может найти сам
+        # Выделяем отдельный профиль и порт, чтобы избежать конфликтов подключения
+        profile_dir = os.path.join(tempfile.gettempdir(), f"drission_profile_{os.getpid()}")
+        os.makedirs(profile_dir, exist_ok=True)
+        co.set_user_data_path(profile_dir)
+        co.auto_port()
+        # Инициализируем страницу с опциями (DrissionPage сам управляет портом)
         self.page = ChromiumPage(addr_or_opts=co)
         return self
     
