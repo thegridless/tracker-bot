@@ -1,0 +1,12 @@
+.git
+.gitignore
+.venv
+.env
+__pycache__
+*.py[cod]
+*.db
+*.db-journal
+logs/
+bot_manager.sh
+.cursorignore
+.cursorindexingignore
